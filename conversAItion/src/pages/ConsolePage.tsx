@@ -3,10 +3,12 @@ import { RealtimeClient } from '@openai/realtime-api-beta';
 import React, { useEffect, useRef } from 'react';
 import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { WavRenderer } from '../utils/wav_renderer';
+import { SignedIn, SignedOut } from "@clerk/clerk-react";
 
 // Components
 import { ChatSection } from '../components/ChatSection/ChatSection';
 import { Header } from '../components/Header/Header';
+import { AuthOverlay } from '../components/AuthOverlay/AuthOverlay';
 
 // Hooks
 import { useAudioRecording } from '../hooks/useAudioRecording';
@@ -39,7 +41,7 @@ export const ConsolePage: React.FC = () => {
         ? { url: LOCAL_RELAY_SERVER_URL }
         : {
             apiKey: apiKey,
-            dangerouslyAllowAPIKeyInBrowser: true,
+            dangerouslyAllowAPIKeyInBrowser: false,
           }
     )
   );
@@ -113,7 +115,6 @@ export const ConsolePage: React.FC = () => {
               ? wavRecorder.getFrequencies('voice')
               : { values: new Float32Array([0]) };
             
-            // Draw using your WavRenderer
             WavRenderer.drawBars(
               canvas,
               ctx,
@@ -184,6 +185,7 @@ export const ConsolePage: React.FC = () => {
     <AppShell
       header={{ height: 60 }}
       padding="md"
+      style={{ position: 'relative' }}
     >
       <Header
         selectedLanguage={selectedLanguage}
@@ -193,20 +195,25 @@ export const ConsolePage: React.FC = () => {
       />
 
       <AppShell.Main>
-        <Container size="xl" px={0}>
-          <Group align="flex-start" grow>
-            <ChatSection
-              items={items}
-              isConnected={isConnected}
-              isRecording={isRecording}
-              onStartRecording={startRecording}
-              onStopRecording={stopRecording}
-              onDisconnect={disconnect}
-              onConnect={connect}
-              clientCanvasRef={clientCanvasRef}
-              serverCanvasRef={serverCanvasRef}
-            />
-          </Group>
+        <Container size="xl" px={0} style={{ position: 'relative' }}>
+          <SignedIn>
+            <Group align="flex-start" grow>
+              <ChatSection
+                items={items}
+                isConnected={isConnected}
+                isRecording={isRecording}
+                onStartRecording={startRecording}
+                onStopRecording={stopRecording}
+                onDisconnect={disconnect}
+                onConnect={connect}
+                clientCanvasRef={clientCanvasRef}
+                serverCanvasRef={serverCanvasRef}
+              />
+            </Group>
+          </SignedIn>
+          <SignedOut>
+            <AuthOverlay />
+          </SignedOut>
         </Container>
       </AppShell.Main>
     </AppShell>

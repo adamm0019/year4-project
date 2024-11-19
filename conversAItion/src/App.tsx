@@ -11,7 +11,7 @@ function App() {
       theme={theme}
       defaultColorScheme="dark"
     >
-      <Notifications position="top-right" />
+      <Notifications position="top-right"/>
       <ConsolePage />
     </MantineProvider>
   );

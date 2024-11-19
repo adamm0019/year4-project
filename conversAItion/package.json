@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
- "dependencies": {
+  "dependencies": {
+    "@clerk/clerk-react": "^5.16.0",
     "@emotion/react": "^11.13.3",
     "@mantine/core": "^7.14.0",
     "@mantine/hooks": "^7.14.0",

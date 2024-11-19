@@ -40,10 +40,10 @@ An interactive language learning application powered by OpenAI's real-time API, 
 ### Installation
 ```bash
 # Clone the repository
-git clone [https://github.com/yourusername/language-learning-assistant.git](https://github.com/adamm0019/conversAItion.git)
+git clone https://github.com/adamm0019/conversAItion-vite.git
 
 # Navigate to project directory
-cd conversAItion
+cd conversAItion-vite
 
 # Install dependencies
 npm install
@@ -61,7 +61,8 @@ npm run dev
 ### Running the Local Relay Server
 ```bash
 # Start the relay server
-npm run relay
+cd relay-server
+node index.js
 ```
 
 ## 🛠️ Tech Stack
@@ -72,7 +73,7 @@ npm run relay
 - **State Management**: React Hooks
 - **Audio Processing**: Web Audio API
 - **API Integration**: OpenAI Real-time API
-- **Styling**: Mantine Core + Emotion
+- **Styling**: Mantine Core + Emotion + Tabler Icons
 
 ## 📁 Project Structure
 
@@ -100,7 +101,7 @@ src/
 
 ### Environment Variables
 ```env
-REACT_APP_LOCAL_RELAY_SERVER_URL=http://localhost:8081
+VITE_LOCAL_RELAY_SERVER_URL=http://localhost:8081
 OPENAI_API_KEY=your_api_key
 ```
 

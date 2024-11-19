@@ -1,8 +1,7 @@
 import React from 'react';
-import { Group, Text, Select, Badge, ActionIcon, Tooltip, Container, Menu, rem } from '@mantine/core';
+import { Group, Text, Select, Badge, ActionIcon, Tooltip, Container, rem } from '@mantine/core';
 import { 
   IconVolume, 
-  IconSchool, 
   IconBrain, 
   IconSettings, 
   IconHistory,
@@ -10,6 +9,7 @@ import {
   IconChartBar,
   IconBook2
 } from '@tabler/icons-react';
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-react";
 import { headerStyles } from './styles';
 import { SettingsModal } from '../SettingsModal/SettingsModal';
 
@@ -135,6 +135,31 @@ export const Header: React.FC<HeaderProps> = ({
                 </ActionIcon>
               </Tooltip>
             )}
+            <SignedIn>
+              <UserButton 
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                      avatarBox: {
+                        width: rem(32),
+                        height: rem(32),
+                      }
+                    }
+                  }}
+                />
+            </SignedIn>
+            <SignedOut>
+              <SignInButton mode="modal">
+                <ActionIcon
+                  variant="subtle"
+                  color="blue"
+                  size="lg"
+                  style={headerStyles.actionButton}
+                >
+                  <IconBrain style={{ width: rem(18), height: rem(18) }} stroke={1.5} />
+                </ActionIcon>
+              </SignInButton>
+            </SignedOut>
           </Group>
         </div>
       </Container>
