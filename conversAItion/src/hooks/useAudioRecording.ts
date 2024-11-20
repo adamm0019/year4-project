@@ -4,19 +4,27 @@ import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { RealtimeClient } from '@openai/realtime-api-beta';
 
 interface UseAudioRecordingProps {
-  wavRecorder: WavRecorder;
-  wavStreamPlayer: WavStreamPlayer;
+  wavRecorder: WavRecorder | null;
+  wavStreamPlayer: WavStreamPlayer | null;
   client: RealtimeClient;
 }
 
 export const useAudioRecording = ({ wavRecorder, wavStreamPlayer, client }: UseAudioRecordingProps) => {
   const [isRecording, setIsRecording] = useState(false);
+  const [canPushToTalk, setCanPushToTalk] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
-  const audioDataRef = useRef<Int16Array[]>([]);
-  const recordingStartTimeRef = useRef<number>(0);
 
   // Initialize audio recording
   const initializeRecording = useCallback(async () => {
+    if (!wavRecorder) {
+      notifications.show({
+        title: 'Error',
+        message: 'Audio system not initialized. Please try again.',
+        color: 'red',
+      });
+      return false;
+    }
+
     try {
       // Request microphone permissions first
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -41,6 +49,8 @@ export const useAudioRecording = ({ wavRecorder, wavStreamPlayer, client }: UseA
 
   // Safe pause function that checks status first
   const safePause = async () => {
+    if (!wavRecorder) return;
+
     try {
       if (wavRecorder.getStatus() === 'recording') {
         await wavRecorder.pause();
@@ -60,18 +70,23 @@ export const useAudioRecording = ({ wavRecorder, wavStreamPlayer, client }: UseA
       return;
     }
 
+    if (!wavRecorder || !wavStreamPlayer) {
+      notifications.show({
+        title: 'Error',
+        message: 'Audio system not initialized. Please try again.',
+        color: 'red',
+      });
+      return;
+    }
+
     try {
       // Initialize if needed
       if (!isInitialized) {
         const initialized = await initializeRecording();
         if (!initialized) {
-          throw new Error('Failed to initialize audio');
+          throw new Error('Failed to initialize audio recording');
         }
       }
-
-      // Reset audio data buffer
-      audioDataRef.current = [];
-      recordingStartTimeRef.current = Date.now();
 
       // Interrupt any current playback
       const trackSampleOffset = await wavStreamPlayer.interrupt();
@@ -80,14 +95,13 @@ export const useAudioRecording = ({ wavRecorder, wavStreamPlayer, client }: UseA
         await client.cancelResponse(trackId, offset);
       }
 
+      // Ensure we're not recording first
+      await safePause();
+
       // Start recording
-      console.log('Starting recording...');
-      await wavRecorder.record((data) => {
+      await wavRecorder.record((data: { mono: ArrayBuffer }) => {
         if (client.isConnected()) {
-          // Store audio data
-          audioDataRef.current.push(data.mono);
-          // Send to server
-          client.appendInputAudio(data.mono);
+          client.appendInputAudio(new Int16Array(data.mono));
         }
       });
       setIsRecording(true);
@@ -95,12 +109,14 @@ export const useAudioRecording = ({ wavRecorder, wavStreamPlayer, client }: UseA
       console.log('Recording started:', {
         recorderStatus: wavRecorder.getStatus(),
         isRecording: true,
-        isConnected: client.isConnected(),
-        startTime: new Date(recordingStartTimeRef.current).toISOString()
+        canPushToTalk,
+        isConnected: client.isConnected()
       });
     } catch (error) {
       console.error('Recording error:', error);
       setIsRecording(false);
+      
+      // Try to cleanup
       await safePause();
 
       notifications.show({
@@ -112,40 +128,28 @@ export const useAudioRecording = ({ wavRecorder, wavStreamPlayer, client }: UseA
   };
 
   const stopRecording = async () => {
-    if (!isRecording) return;
+    if (!isRecording || !wavRecorder) return;
 
     try {
-      const recordingDuration = Date.now() - recordingStartTimeRef.current;
       console.log('Stopping recording:', {
         recorderStatus: wavRecorder.getStatus(),
         isRecording: true,
-        isConnected: client.isConnected(),
-        audioDataLength: audioDataRef.current.length,
-        recordingDuration: `${recordingDuration}ms`
+        isConnected: client.isConnected()
       });
 
       // Pause recording first
       await safePause();
       setIsRecording(false);
 
-      // Create response if connected and we have audio data
-      if (client.isConnected() && audioDataRef.current.length > 0) {
-        console.log('Creating response with audio data');
+      // Create response if connected and in push-to-talk mode
+      if (client.isConnected() && canPushToTalk) {
         await client.createResponse();
-      } else {
-        console.warn('Not creating response:', {
-          isConnected: client.isConnected(),
-          hasAudioData: audioDataRef.current.length > 0
-        });
       }
-
-      // Clear audio data buffer
-      audioDataRef.current = [];
-      recordingStartTimeRef.current = 0;
 
       console.log('Recording stopped:', {
         recorderStatus: wavRecorder.getStatus(),
         isRecording: false,
+        canPushToTalk,
         isConnected: client.isConnected()
       });
     } catch (error) {
@@ -161,22 +165,91 @@ export const useAudioRecording = ({ wavRecorder, wavStreamPlayer, client }: UseA
     }
   };
 
-  // Effect to handle connection state changes
-  useEffect(() => {
-    const checkConnection = () => {
-      if (!client.isConnected() && isRecording) {
-        console.log('Connection lost while recording, stopping...');
-        stopRecording();
+  const changeTurnEndType = useCallback(async (value: string) => {
+    if (!wavRecorder) return;
+
+    try {
+      console.log('Changing turn end type:', {
+        newValue: value,
+        currentRecorderStatus: wavRecorder.getStatus(),
+        isConnected: client.isConnected()
+      });
+
+      // Update push-to-talk state first
+      const newPushToTalkState = value === 'none';
+      setCanPushToTalk(newPushToTalkState);
+
+      // If currently recording and switching to push-to-talk, stop recording
+      if (isRecording && newPushToTalkState) {
+        await stopRecording();
       }
-    };
 
-    // Check connection state periodically
-    const interval = setInterval(checkConnection, 1000);
+      // Update client session
+      await client.updateSession({
+        turn_detection: value === 'none' ? null : { type: 'server_vad' },
+      });
 
-    return () => {
-      clearInterval(interval);
-    };
-  }, [client, isRecording]);
+      // If switching to VAD mode
+      if (value === 'server_vad') {
+        if (!client.isConnected()) {
+          throw new Error('Client must be connected for VAD mode');
+        }
+
+        // Initialize if needed
+        if (!isInitialized) {
+          const initialized = await initializeRecording();
+          if (!initialized) {
+            throw new Error('Failed to initialize audio for VAD mode');
+          }
+        }
+
+        // Start VAD recording
+        if (wavRecorder.getStatus() === 'ended') {
+          await wavRecorder.begin();
+        }
+
+        // Only start recording if not already recording
+        if (!isRecording) {
+          await wavRecorder.record((data: { mono: ArrayBuffer }) => {
+            if (client.isConnected()) {
+              client.appendInputAudio(new Int16Array(data.mono));
+            }
+          });
+          setIsRecording(true);
+        }
+      }
+      
+      console.log('Turn end type changed:', {
+        value,
+        canPushToTalk: newPushToTalkState,
+        recorderStatus: wavRecorder.getStatus(),
+        isConnected: client.isConnected()
+      });
+
+    } catch (error) {
+      console.error('Error changing turn end type:', error);
+      
+      // Reset to push-to-talk mode on error
+      setCanPushToTalk(true);
+      setIsRecording(false);
+      await safePause();
+      
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to change voice detection mode. Reverting to push-to-talk.',
+        color: 'red',
+      });
+
+      // Try to reset client session
+      try {
+        await client.updateSession({
+          turn_detection: null
+        });
+      } catch (sessionError) {
+        console.error('Failed to reset session:', sessionError);
+      }
+    }
+  }, [wavRecorder, client, isInitialized, initializeRecording, isRecording, stopRecording]);
 
   // Cleanup effect
   useEffect(() => {
@@ -184,24 +257,27 @@ export const useAudioRecording = ({ wavRecorder, wavStreamPlayer, client }: UseA
       const cleanup = async () => {
         try {
           if (isRecording) {
+            await stopRecording();
+          } else {
             await safePause();
-            setIsRecording(false);
           }
+          setIsRecording(false);
           setIsInitialized(false);
-          audioDataRef.current = [];
-          recordingStartTimeRef.current = 0;
         } catch (error) {
           console.error('Cleanup error:', error);
         }
       };
       cleanup();
     };
-  }, []);
+  }, [isRecording, stopRecording]);
 
   return {
     isRecording,
+    canPushToTalk,
     isInitialized,
     startRecording,
-    stopRecording
+    stopRecording,
+    changeTurnEndType,
+    initializeRecording,
   };
 };

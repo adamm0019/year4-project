@@ -1,13 +1,17 @@
 import React from 'react';
-import { Paper, Box, Group, Button } from '@mantine/core';
-import { IconMicrophone, IconX } from '@tabler/icons-react';
+import { Paper, Box, Group, Switch, Button } from '@mantine/core';
+import { createStyles } from '@mantine/styles'
+import { IconPlayerStop, IconMicrophone, IconX } from '@tabler/icons-react';
 import { rem } from '@mantine/core';
-import { createStyles } from '@mantine/styles';
 
 // Props interface
 interface AudioControlsProps {
   isConnected: boolean;
+  canPushToTalk: boolean;
   isRecording: boolean;
+  onStartRecording: () => Promise<void>;
+  onStopRecording: () => Promise<void>;
+  onTurnEndTypeChange: (value: string) => Promise<void>;
   onDisconnect: () => Promise<void>;
   onConnect: () => Promise<void>;
   clientCanvasRef: React.RefObject<HTMLCanvasElement>;
@@ -32,30 +36,32 @@ const useStyles = createStyles((theme: { colorScheme: string; colors: { dark: an
   },
   controls: {
     display: 'flex',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
   }
 }));
 
 export const AudioControls: React.FC<AudioControlsProps> = ({
   isConnected,
+  canPushToTalk,
   isRecording,
+  onStartRecording,
+  onStopRecording,
+  onTurnEndTypeChange,
   onDisconnect,
   onConnect,
   clientCanvasRef,
   serverCanvasRef,
 }) => {
   const { classes } = useStyles();
+  const [isChangingMode, setIsChangingMode] = React.useState(false);
 
-  const handleConnectionToggle = async () => {
+  const handleModeChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      if (isConnected) {
-        await onDisconnect();
-      } else {
-        await onConnect();
-      }
-    } catch (error) {
-      console.error('Connection error:', error);
+      setIsChangingMode(true);
+      await onTurnEndTypeChange(event.target.checked ? 'server_vad' : 'none');
+    } finally {
+      setIsChangingMode(false);
     }
   };
 
@@ -69,29 +75,55 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
       </Box>
 
       <Group className={classes.controls}>
-        <Button
-          variant={isConnected ? 'light' : 'filled'}
-          color={isConnected ? 'red' : 'blue'}
-          leftSection={isConnected ? 
-            <IconX style={{ width: rem(16), height: rem(16) }} /> : 
-            <IconMicrophone style={{ width: rem(16), height: rem(16) }} />
-          }
-          onClick={handleConnectionToggle}
-        >
-          {isConnected ? 'Disconnect' : 'Connect'}
-        </Button>
+        <Switch
+          label="Voice Activity Detection"
+          checked={!canPushToTalk}
+          onChange={handleModeChange}
+          size="md"
+          disabled={!isConnected || isChangingMode}
+        />
+        <Group>
+          {isConnected && canPushToTalk && (
+            <Button
+              variant={isRecording ? 'filled' : 'light'}
+              color={isRecording ? 'red' : 'blue'}
+              leftSection={isRecording ? 
+                <IconPlayerStop style={{ width: rem(16), height: rem(16) }} /> : 
+                <IconMicrophone style={{ width: rem(16), height: rem(16) }} />
+              }
+              onPointerDown={onStartRecording}
+              onPointerUp={onStopRecording}
+              onPointerLeave={onStopRecording}
+              disabled={!isConnected || !canPushToTalk || isChangingMode}
+            >
+              {isRecording ? 'Release to Send' : 'Push to Talk'}
+            </Button>
+          )}
+          <Button
+            variant={isConnected ? 'light' : 'filled'}
+            color={isConnected ? 'red' : 'blue'}
+            leftSection={isConnected ? 
+              <IconX style={{ width: rem(16), height: rem(16) }} /> : 
+              <IconMicrophone style={{ width: rem(16), height: rem(16) }} />
+            }
+            onClick={isConnected ? onDisconnect : onConnect}
+            disabled={isChangingMode}
+          >
+            {isConnected ? 'Disconnect' : 'Connect'}
+          </Button>
+        </Group>
       </Group>
     </Paper>
   );
 };
 
-// AudioVisualiser component
+// Also add the AudioVisualiser interface
 interface AudioVisualiserProps {
   clientCanvasRef: React.RefObject<HTMLCanvasElement>;
   serverCanvasRef: React.RefObject<HTMLCanvasElement>;
 }
 
-export const AudioVisualiser: React.FC<AudioVisualiserProps> = ({
+const AudioVisualiser: React.FC<AudioVisualiserProps> = ({
   clientCanvasRef,
   serverCanvasRef,
 }) => {

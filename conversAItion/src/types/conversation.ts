@@ -25,6 +25,7 @@ export interface BaseConversationItem {
   content?: Array<ContentItem> | string;
   formatted: FormattedItem;
   status?: 'completed' | 'in_progress' | 'failed';
+  response?: string;
 }
 
 // Enhanced version with our custom fields

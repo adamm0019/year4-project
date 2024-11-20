@@ -1,7 +1,6 @@
+import { AudioProcessorSrc } from './worklets/audio_processor.js';
 import { AudioAnalysis } from './analysis/audio_analysis.js';
 import { WavPacker } from './wav_packer.js';
-import { AudioProcessorSrc } from './worklets/audio_processor.js';
-import { React } from 'react';
 
 /**
  * Decodes audio into a wav file

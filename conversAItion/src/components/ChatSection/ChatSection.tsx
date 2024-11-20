@@ -1,18 +1,19 @@
-import React from 'react';
-import { Stack, Group, Button, Text, Paper, Transition, Box, Loader } from '@mantine/core';
-import { IconMicrophone, IconPlayerStop } from '@tabler/icons-react';
+import React, { useRef, useEffect } from 'react';
+import { Stack, Group, Text, Transition, Box, Loader, Center, TextInput, ActionIcon } from '@mantine/core';
+import { IconMicrophone, IconPlayerStop, IconPaperclip, IconArrowUp } from '@tabler/icons-react';
 import { chatSectionStyles, pulseAnimation, slideIn } from './styles';
 import { MessageBubble } from './MessageBubble';
 import { EnhancedConversationItem } from '../../types/conversation';
+import { useUser } from "@clerk/clerk-react";
 
 interface ChatSectionProps {
   items: EnhancedConversationItem[];
   isConnected: boolean;
   isRecording: boolean;
-  onStartRecording: () => void;
-  onStopRecording: () => void;
-  onDisconnect: () => void;
-  onConnect: () => void;
+  onStartRecording: (() => Promise<void>) | (() => void);
+  onStopRecording: (() => Promise<void>) | (() => void);
+  onDisconnect: (() => Promise<void>) | (() => void);
+  onConnect: (() => Promise<void>) | (() => void);
   clientCanvasRef: React.RefObject<HTMLCanvasElement>;
   serverCanvasRef: React.RefObject<HTMLCanvasElement>;
 }
@@ -29,117 +30,192 @@ export const ChatSection: React.FC<ChatSectionProps> = ({
   serverCanvasRef,
 }) => {
   const [mounted, setMounted] = React.useState(false);
+  const [message, setMessage] = React.useState('');
+  const { user } = useUser();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [items]);
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleRecordingClick = React.useCallback(() => {
-    if (isRecording) {
-      onStopRecording();
-    } else {
-      onStartRecording();
+  const handleRecordingClick = React.useCallback(async () => {
+    if (!isConnected) {
+      await onConnect();
+      return;
     }
-  }, [isRecording, onStartRecording, onStopRecording]);
+
+    if (isRecording) {
+      await onStopRecording();
+    } else {
+      await onStartRecording();
+    }
+  }, [isConnected, isRecording, onStartRecording, onStopRecording, onConnect]);
 
   return (
-    <Stack gap={0} h="100%" style={{ position: 'relative' }}>
-      {/* Connection controls */}
-      <Box p="md" style={chatSectionStyles.connectionControls}>
-        <Group justify="space-between" align="center">
-          <Button
-            variant={isConnected ? "light" : "filled"}
-            color={isConnected ? "red" : "blue"}
-            onClick={isConnected ? onDisconnect : onConnect}
-            size="sm"
-            radius="xl"
-            style={{
-              transition: 'all 0.3s ease',
-              animation: isConnected ? `${pulseAnimation} 2s infinite` : 'none'
-            }}
-          >
-            {isConnected ? "Disconnect" : "Connect"}
-          </Button>
-        </Group>
-      </Box>
-
+    <Stack gap={0} style={{ position: 'relative', flex: 1, width: '100%' }}>
       {/* Chat messages */}
       <Box style={chatSectionStyles.chatArea}>
-        <Stack gap="xl" px="xl">
-          {items.map((item, index) => (
-            <Transition
-              key={item.id || index}
-              mounted={mounted}
-              transition="slide-up"
-              duration={400}
-              timingFunction="ease-out"
-              exitDuration={200}
-            >
-              {(styles) => (
-                <Box style={{ ...styles, animation: `${slideIn} 0.3s ease-out` }}>
-                  <MessageBubble item={item} />
-                </Box>
-              )}
-            </Transition>
-          ))}
-        </Stack>
+        {items.length === 0 ? (
+          <Center style={{ height: '100%', flexDirection: 'column', gap: '1rem', width: '100%', padding: '0 1rem' }}>
+            <Text size="xl" fw={600} c="dimmed">Hi, {user?.firstName}</Text>
+            <Text size="sm" c="dimmed" style={{ maxWidth: '600px', textAlign: 'center' }}>
+              Click the microphone button to start recording. Click again to stop and send your message. I'll help you practice your conversation skills.
+            </Text>
+          </Center>
+        ) : (
+          <Stack gap="xl" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+            {items.map((item, index) => (
+              <Transition
+                key={item.id || index}
+                mounted={mounted}
+                transition="slide-up"
+                duration={400}
+                timingFunction="ease-out"
+                exitDuration={200}
+              >
+                {(styles) => (
+                  <Box style={{ ...styles, animation: `${slideIn} 0.3s ease-out`, width: '100%' }}>
+                    <MessageBubble item={item} />
+                  </Box>
+                )}
+              </Transition>
+            ))}
+            <div ref={messagesEndRef} />
+          </Stack>
+        )}
       </Box>
 
-      {/* Recording controls */}
+      {/* Input and Recording controls */}
       <Box p="md" style={chatSectionStyles.recordingControls}>
-        <Stack gap="md">
-          <Group justify="center">
-            <Button
-              size="lg"
-              radius="xl"
-              color={isRecording ? "red" : "blue"}
-              variant={isRecording ? "filled" : "light"}
-              onClick={handleRecordingClick}
-              fullWidth
-              style={{ 
-                maxWidth: 400,
-                transition: 'all 0.3s ease',
-                transform: isRecording ? 'scale(1.02)' : 'scale(1)',
-                animation: isRecording ? `${pulseAnimation} 2s infinite` : 'none'
-              }}
-            >
-              <Group gap="xs" justify="center">
-                {isRecording ? <IconPlayerStop size={20} /> : <IconMicrophone size={20} />}
-                <span>{isRecording ? "Stop Recording" : "Start Recording"}</span>
+        <Stack gap="md" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+          <Group justify="center" style={{ width: '100%' }}>
+            {/* Audio visualizers */}
+            <Box hiddenFrom="sm" style={{ width: '100%', marginBottom: '8px' }}>
+              <Group gap="md" justify="center">
+                <Box style={{ position: 'relative' }}>
+                  <canvas 
+                    ref={clientCanvasRef} 
+                    height={40} 
+                    width={80} 
+                    style={chatSectionStyles.canvas}
+                  />
+                  {isRecording && (
+                    <Loader 
+                      size="xs" 
+                      color="blue" 
+                      style={chatSectionStyles.loader}
+                    />
+                  )}
+                </Box>
+                <Box style={{ position: 'relative' }}>
+                  <canvas 
+                    ref={serverCanvasRef} 
+                    height={40} 
+                    width={80} 
+                    style={chatSectionStyles.canvas}
+                  />
+                  {isConnected && (
+                    <Loader 
+                      size="xs" 
+                      color="blue" 
+                      style={chatSectionStyles.loader}
+                    />
+                  )}
+                </Box>
               </Group>
-            </Button>
-          </Group>
-
-          <Group justify="center" gap="xl">
-            <Box style={{ position: 'relative' }}>
-              <canvas 
-                ref={clientCanvasRef} 
-                height={40} 
-                width={100} 
-                style={chatSectionStyles.canvas}
-              />
-              {isRecording && (
-                <Loader 
-                  size="xs" 
-                  color="blue" 
-                  style={chatSectionStyles.loader}
-                />
-              )}
             </Box>
-            <Box style={{ position: 'relative' }}>
-              <canvas 
-                ref={serverCanvasRef} 
-                height={40} 
-                width={100} 
-                style={chatSectionStyles.canvas}
-              />
-              {isConnected && (
-                <Loader 
-                  size="xs" 
-                  color="blue" 
-                  style={chatSectionStyles.loader}
+
+            <Box visibleFrom="sm" style={{ position: 'absolute', top: '-50px', left: '50%', transform: 'translateX(-50%)' }}>
+              <Group gap="xl">
+                <Box style={{ position: 'relative' }}>
+                  <canvas 
+                    ref={clientCanvasRef} 
+                    height={40} 
+                    width={100} 
+                    style={chatSectionStyles.canvas}
+                  />
+                  {isRecording && (
+                    <Loader 
+                      size="xs" 
+                      color="blue" 
+                      style={chatSectionStyles.loader}
+                    />
+                  )}
+                </Box>
+                <Box style={{ position: 'relative' }}>
+                  <canvas 
+                    ref={serverCanvasRef} 
+                    height={40} 
+                    width={100} 
+                    style={chatSectionStyles.canvas}
+                  />
+                  {isConnected && (
+                    <Loader 
+                      size="xs" 
+                      color="blue" 
+                      style={chatSectionStyles.loader}
+                    />
+                  )}
+                </Box>
+              </Group>
+            </Box>
+
+            {/* Input area */}
+            <Box style={chatSectionStyles.inputWrapper}>
+              <Group gap="xs" style={{ width: '100%' }}>
+                <Box visibleFrom="sm">
+                  <ActionIcon 
+                    variant="subtle" 
+                    color="gray" 
+                    size="lg"
+                    style={{ flexShrink: 0 }}
+                  >
+                    <IconPaperclip size={20} />
+                  </ActionIcon>
+                </Box>
+                
+                <TextInput
+                  placeholder="Type a message..."
+                  value={message}
+                  onChange={(e) => setMessage(e.currentTarget.value)}
+                  style={{ flex: 1 }}
+                  rightSection={
+                    <Group gap="xs">
+                      <ActionIcon
+                        variant="subtle"
+                        color={isRecording ? "red" : "blue"}
+                        onClick={handleRecordingClick}
+                        size="lg"
+                        style={{
+                          animation: isRecording ? `${pulseAnimation} 2s infinite` : 'none',
+                          cursor: 'pointer',
+                          userSelect: 'none',
+                          touchAction: 'none'
+                        }}
+                      >
+                        {isRecording ? <IconPlayerStop size={20} /> : <IconMicrophone size={20} />}
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="filled"
+                        color="blue"
+                        size="lg"
+                        disabled={!message.trim()}
+                      >
+                        <IconArrowUp size={20} />
+                      </ActionIcon>
+                    </Group>
+                  }
+                  rightSectionWidth={100}
                 />
-              )}
+              </Group>
             </Box>
           </Group>
         </Stack>

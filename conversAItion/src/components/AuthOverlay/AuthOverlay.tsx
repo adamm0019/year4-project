@@ -6,9 +6,12 @@ It also contains styling using the old Mantine v3 createStyles API, found here: 
 
 */
 
-import { Box, Paper, Text, Button, Stack, Space } from '@mantine/core';
+import { Box, Paper, Text, Button, Stack } from '@mantine/core';
 import { createStyles } from '@mantine/styles'
+import darkModeLogo from '../../../src/assets/conversationlogodarkmode.svg';
+import lightModeLogo from '../../../src/assets/conversationlogolightmode.svg';
 import { SignInButton } from "@clerk/clerk-react";
+import { useMantineColorScheme } from '@mantine/core';
 
 const useStyles = createStyles((theme: { radius: { lg: any; md: any; }; white: any; spacing: { xs: any; lg: any; }; colors: { gray: any[]; }; }) => ({
   overlay: {
@@ -18,7 +21,7 @@ const useStyles = createStyles((theme: { radius: { lg: any; md: any; }; white: a
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    backdropFilter: 'blur(10px)',
+    backdropFilter: 'blur(3px)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -28,19 +31,18 @@ const useStyles = createStyles((theme: { radius: { lg: any; md: any; }; white: a
     width: '100%',
     maxWidth: 400,
     background: 'rgba(255, 255, 255, 0.08)',
-    backdropFilter: 'blur(16px)',
+    backdropFilter: 'blur(0px)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
     borderRadius: theme.radius.lg,
-    transform: 'translateY(-10%)',
+    marginTop: '40px',
     transition: 'all 0.3s ease',
     '&:hover': {
-      transform: 'translateY(-11%)',
       boxShadow: '0 12px 40px 0 rgba(31, 38, 135, 0.45)',
     },
   },
   title: {
-    fontSize: '32px',
+    fontSize: '28px',
     fontWeight: 700,
     textAlign: 'center',
     color: theme.white,
@@ -69,19 +71,30 @@ const useStyles = createStyles((theme: { radius: { lg: any; md: any; }; white: a
       transform: 'translateY(-2px)',
     },
   },
+  logo: {
+    width: '180px',
+    height: 'auto',
+    position: 'absolute',
+    top: '25%',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: 1001,
+  }
 }));
 
 export const AuthOverlay = () => {
   const { classes } = useStyles();
+  const { colorScheme } = useMantineColorScheme();
 
   return (
     <Box className={classes.overlay}>
-      <Paper p="xl" className={classes.card}>
-        <Stack gap="md">
-          <Text className={classes.title}>
-            Sign in to use ConversAItion
-          </Text>
-          <Space></Space>
+      <img 
+        src={colorScheme === 'dark' ? darkModeLogo : lightModeLogo} 
+        alt="ConversAItion Logo" 
+        className={classes.logo}
+      />
+      <Paper p="md" className={classes.card}>
+        <Stack gap="sm" align="center">
           <Text className={classes.description}>
             Create an account or sign in to access the chat functionality
           </Text>

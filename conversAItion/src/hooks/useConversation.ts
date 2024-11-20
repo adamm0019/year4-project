@@ -4,11 +4,12 @@ import { notifications } from '@mantine/notifications';
 import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { ItemType } from '@openai/realtime-api-beta/dist/lib/client.js';
 import { EnhancedConversationItem } from '../types/conversation';
+import { instructions } from '../utils/conversation_config';
 
 interface UseConversationProps {
   client: RealtimeClient;
-  wavRecorder: WavRecorder;
-  wavStreamPlayer: WavStreamPlayer;
+  wavRecorder: WavRecorder | null;
+  wavStreamPlayer: WavStreamPlayer | null;
 }
 
 export const useConversation = ({ client, wavRecorder, wavStreamPlayer }: UseConversationProps) => {
@@ -24,7 +25,8 @@ export const useConversation = ({ client, wavRecorder, wavStreamPlayer }: UseCon
       ...item,
       created_at: new Date().toISOString(),
       timestamp: Date.now(),
-      object: item.object || 'conversation.item'
+      object: item.object || 'conversation.item',
+      formatted: item.formatted || {}
     } as EnhancedConversationItem;
   };
 
@@ -70,18 +72,43 @@ export const useConversation = ({ client, wavRecorder, wavStreamPlayer }: UseCon
       });
     };
 
+    const handleConversationUpdated = async ({ item, delta }: any) => {
+      if (wavStreamPlayer && delta?.audio) {
+        wavStreamPlayer.add16BitPCM(delta.audio, item.id);
+      }
+
+      if (item.status === 'completed' && item.formatted.audio?.length) {
+        const wavFile = await WavRecorder.decode(
+          item.formatted.audio,
+          24000,
+          24000
+        );
+        item.formatted.file = wavFile;
+      }
+
+      setItems(client.conversation.getItems().map(enhanceItem));
+    };
+
     try {
+      // Connection events
       client.on('session.created', handleSessionCreated);
       client.on('session.updated', handleSessionUpdated);
       client.on('session.closed', handleSessionClosed);
       client.on('error', handleError);
 
+      // Conversation events
+      client.on('conversation.updated', handleConversationUpdated);
+
       return () => {
         try {
+          // Remove connection event listeners
           client.off('session.created', handleSessionCreated);
           client.off('session.updated', handleSessionUpdated);
           client.off('session.closed', handleSessionClosed);
           client.off('error', handleError);
+
+          // Remove conversation event listeners
+          client.off('conversation.updated', handleConversationUpdated);
         } catch (error) {
           console.error('Error removing event listeners:', error);
         }
@@ -89,7 +116,7 @@ export const useConversation = ({ client, wavRecorder, wavStreamPlayer }: UseCon
     } catch (error) {
       console.error('Error setting up event listeners:', error);
     }
-  }, [client]);
+  }, [client, wavStreamPlayer]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -121,10 +148,6 @@ export const useConversation = ({ client, wavRecorder, wavStreamPlayer }: UseCon
       clearConnectionTimeout();
       hasInitializedRef.current = false;
 
-      // Initialize WavStreamPlayer first
-      console.log('Initializing WavStreamPlayer...');
-      await wavStreamPlayer.connect();
-
       // Set up connection timeout
       const connectionPromise = client.connect();
       const timeoutPromise = new Promise((_, reject) => {
@@ -151,10 +174,13 @@ export const useConversation = ({ client, wavRecorder, wavStreamPlayer }: UseCon
         
         // Initialize session with all required settings
         await client.updateSession({
-          instructions: 'You are a helpful language learning assistant. Keep your responses concise.',
-          input_audio_transcription: { model: 'whisper-1' },
+          instructions: instructions,
+          input_audio_transcription: { 
+            model: 'whisper-1',
+          },
           voice: 'alloy',
           temperature: 0.7,
+          model: 'gpt-4o-realtime-preview-2024-10-01'
         });
 
         console.log('Session initialized successfully');

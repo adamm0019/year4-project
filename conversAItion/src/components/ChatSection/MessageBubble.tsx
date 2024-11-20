@@ -27,33 +27,32 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ item }) => {
       if (item.formatted?.text) {
         return item.formatted.text;
       }
-      if (item.formatted?.audio?.length) {
-        return '(transcribing...)';
-      }
-      if (typeof item.content === 'string') {
-        return item.content;
-      }
       if (Array.isArray(item.content)) {
         const textContent = item.content.find((c: ContentItem) => c?.type === 'input_text');
         if (textContent?.text) return textContent.text;
       }
+      if (typeof item.content === 'string') {
+        return item.content;
+      }
+      return '(transcribing...)';
     }
 
     // For assistant messages, show text response or processing state
     if (isAssistant) {
+      if (item.formatted?.transcript) {
+        return item.formatted.transcript;
+      }
       if (item.formatted?.text) {
         return item.formatted.text;
-      }
-      if (typeof item.content === 'string') {
-        return item.content;
       }
       if (Array.isArray(item.content)) {
         const textContent = item.content.find((c: ContentItem) => c?.type === 'text');
         if (textContent?.text) return textContent.text;
       }
-      if (item.status === 'in_progress') {
-        return '(generating response...)';
+      if (typeof item.content === 'string') {
+        return item.content;
       }
+      return '(generating response...)';
     }
 
     return '(processing message)';
@@ -76,9 +75,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ item }) => {
     console.log('Rendering message:', {
       id: item.id,
       role: item.role,
-      displayText,
-      hasAudio: !!item.formatted?.file?.url,
-      status: item.status
+      content: item.content,
+      formatted: item.formatted,
+      status: item.status,
+      displayText
     });
 
     return (
