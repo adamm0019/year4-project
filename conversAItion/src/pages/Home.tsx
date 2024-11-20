@@ -2,24 +2,25 @@ import { AppShell, Container, Group } from '@mantine/core';
 import { RealtimeClient } from '@openai/realtime-api-beta';
 import React, { useEffect, useRef } from 'react';
 import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
-import { WavRenderer } from '../utils/wav_renderer';
+import { WavRenderer } from '../utils/wav_renderer.js';
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 
 // Components
-import { ChatSection } from '../components/ChatSection/ChatSection';
-import { Header } from '../components/Header/Header';
-import { AuthOverlay } from '../components/AuthOverlay/AuthOverlay';
+import { ChatSection } from '../components/ChatSection/ChatSection.js';
+import { Header } from '../components/Header/Header.js';
+import { AuthOverlay } from '../components/AuthOverlay/AuthOverlay.js';
 
 // Hooks
-import { useAudioRecording } from '../hooks/useAudioRecording';
-import { useConversation } from '../hooks/useConversation';
-import { useEventLogging } from '../hooks/useEventLogging';
-import { useGlobalStyles } from '../styles/theme';
+import { useAudioRecording } from '../hooks/useAudioRecording.js';
+import { useConversation } from '../hooks/useConversation.js';
+import { useEventLogging } from '../hooks/useEventLogging.js';
 
 const LOCAL_RELAY_SERVER_URL: string = import.meta.env.VITE_LOCAL_RELAY_SERVER_URL || '';
 
-export const ConsolePage: React.FC = () => {
-  const { classes } = useGlobalStyles();
+export const Home: React.FC = () => {
+
+
+  // Start reference: https://github.com/openai/openai-realtime-console/ 
 
   // API Key handling
   const apiKey = LOCAL_RELAY_SERVER_URL
@@ -45,7 +46,11 @@ export const ConsolePage: React.FC = () => {
           }
     )
   );
+  
+  // End reference
 
+
+  // Creting the react refs using useRef hooks to reference HTML canvas elements (audio visualisation) 
   const clientCanvasRef = useRef<HTMLCanvasElement>(null);
   const serverCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -113,9 +118,9 @@ export const ConsolePage: React.FC = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const result = wavRecorder.recording
               ? wavRecorder.getFrequencies('voice')
-              : { values: new Float32Array([0]) };
+              : { values: new Float32Array([0]) }; // Creating a flot32Array from voice input
             
-            WavRenderer.drawBars(
+            WavRenderer.drawBars( // Drawing visualised audio input
               canvas,
               ctx,
               result.values,
@@ -142,7 +147,7 @@ export const ConsolePage: React.FC = () => {
               ? wavStreamPlayer.getFrequencies('voice')
               : { values: new Float32Array([0]) };
             
-            WavRenderer.drawBars(
+            WavRenderer.drawBars( // Drawing visualised audio output (from the AI)
               canvas,
               ctx,
               result.values,
@@ -182,21 +187,21 @@ export const ConsolePage: React.FC = () => {
   }, [addEvent]);
 
   return (
-    <AppShell
+    <AppShell // AppShell component from Mantine handling header styling
       header={{ height: 60 }}
       padding="md"
       style={{ position: 'relative' }}
     >
-      <Header
+      <Header // Header component
         selectedLanguage={selectedLanguage}
         onLanguageChange={(value) => setSelectedLanguage(value || 'es')}
         onResetAPIKey={resetAPIKey}
         showSettings={!LOCAL_RELAY_SERVER_URL}
       />
 
-      <AppShell.Main>
+      <AppShell.Main> {/* AppShell component for styling main content*/}
         <Container size="xl" px={0} style={{ position: 'relative' }}>
-          <SignedIn>
+          <SignedIn> {/* Only showing the main content if the user is signed in */}
             <Group align="flex-start" grow>
               <ChatSection
                 items={items}
@@ -211,7 +216,7 @@ export const ConsolePage: React.FC = () => {
               />
             </Group>
           </SignedIn>
-          <SignedOut>
+          <SignedOut>{/* If the user is signed out, showing the AuthOverlay */}
             <AuthOverlay />
           </SignedOut>
         </Container>
@@ -220,4 +225,4 @@ export const ConsolePage: React.FC = () => {
   );
 };
 
-export default ConsolePage;
+export default Home;

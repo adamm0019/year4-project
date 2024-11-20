@@ -2,17 +2,17 @@ import { MantineProvider } from '@mantine/core';
 import { theme } from './styles/theme';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
-import {ConsolePage} from './pages/ConsolePage';
+import { Home } from './pages/Home';
 import { Notifications } from '@mantine/notifications';
 
 function App() {
   return (
-    <MantineProvider
+    <MantineProvider // initialising the mantineprovider component for styling
       theme={theme}
       defaultColorScheme="dark"
     >
       <Notifications position="top-right"/>
-      <ConsolePage />
+      <Home /> {/*creating an instance of the main page, */}
     </MantineProvider>
   );
 }

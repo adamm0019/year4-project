@@ -1,5 +1,12 @@
+/* 
+
+This file contains interfaces, components, and styling for the header component, which is used across all pages
+
+*/
+
+
 import React from 'react';
-import { Group, Text, Select, Badge, ActionIcon, Tooltip, Container, rem } from '@mantine/core';
+import { Group, Text, Select, Badge, ActionIcon, Tooltip, Container, rem, useMantineColorScheme } from '@mantine/core';
 import { 
   IconVolume, 
   IconBrain, 
@@ -12,6 +19,8 @@ import {
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-react";
 import { headerStyles } from './styles';
 import { SettingsModal } from '../SettingsModal/SettingsModal';
+import conversationLogoDark from '../../assets/conversationlogodarkmode.svg';
+import conversationLogoLight from '../../assets/conversationlogolightmode.svg';
 
 interface HeaderProps {
   selectedLanguage: string;
@@ -27,19 +36,28 @@ export const Header: React.FC<HeaderProps> = ({
   showSettings,
 }) => {
   const [settingsOpened, setSettingsOpened] = React.useState(false);
+  const { colorScheme } = useMantineColorScheme();
 
   return (
     <>
       <Container size="xl">
         <div style={headerStyles.navbarInner}>
           <Group>
-            <Text size="lg" fw={700} c="blue.4">Language Learning Assistant</Text>
+            <img 
+              src={colorScheme === 'dark' ? conversationLogoDark : conversationLogoLight} 
+              alt="Conversation Logo" 
+              style={{ 
+                height: '165px',
+                width: 'auto',
+                marginRight: '12px'
+              }} 
+            />
             <Select
               size="sm"
               w={120}
               value={selectedLanguage}
               onChange={onLanguageChange}
-              data={[
+              data={[ // Adding example languages to the dropdown for testing
                 { value: 'es', label: 'Spanish' },
                 { value: 'fr', label: 'French' },
                 { value: 'de', label: 'German' },
@@ -48,12 +66,12 @@ export const Header: React.FC<HeaderProps> = ({
               ]}
               styles={{
                 input: {
-                  backgroundColor: 'var(--mantine-color-dark-6)',
+                  backgroundColor: 'var(--mantine-color-dark-6)', // inherited mantine default dark mode bg colour
                   borderColor: 'var(--mantine-color-dark-4)',
                 },
               }}
             />
-            <Badge 
+            <Badge // creating the badge component for rating the user's proficiency in the selected language
               variant="dot" 
               color="blue" 
               size="lg"
@@ -62,11 +80,11 @@ export const Header: React.FC<HeaderProps> = ({
                 textTransform: 'none',
               }}
             >
-              Intermediate
+              Intermediate {/* Placeholder text for now */}
             </Badge>
           </Group>
 
-          <Group gap="lg">
+          <Group gap="lg"> {/* Creting the header items */}
             <Tooltip label="Pronunciation Practice">
               <ActionIcon 
                 variant="subtle" 
@@ -137,7 +155,7 @@ export const Header: React.FC<HeaderProps> = ({
             )}
             <SignedIn>
               <UserButton 
-                afterSignOutUrl="/"
+                afterSignOutUrl="/" // deprecated but dont know what to replace with
                 appearance={{
                   elements: {
                       avatarBox: {
@@ -164,10 +182,10 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </Container>
 
-      <SettingsModal
+      <SettingsModal // unused settings modal for now
         opened={settingsOpened}
         onClose={() => setSettingsOpened(false)}
-        onResetAPIKey={onResetAPIKey}
+        onResetAPIKey={onResetAPIKey} // ability for user to set their API key
       />
     </>
   );

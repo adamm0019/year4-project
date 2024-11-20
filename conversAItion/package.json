@@ -13,6 +13,7 @@
     "@clerk/clerk-react": "^5.16.0",
     "@emotion/react": "^11.13.3",
     "@mantine/core": "^7.14.0",
+    "@mantine/emotion": "^7.14.1",
     "@mantine/hooks": "^7.14.0",
     "@mantine/notifications": "^7.14.0",
     "@mantine/styles": "^6.0.22",
