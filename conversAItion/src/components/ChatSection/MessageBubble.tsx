@@ -1,62 +1,53 @@
 import React from 'react';
-import { Box, Text } from '@mantine/core';
-import { chatSectionStyles } from './styles';
-import { EnhancedConversationItem, ContentItem } from '../../types/conversation';
+import { Box, Text, Avatar, Group } from '@mantine/core';
+import { motion } from 'framer-motion';
+import { IconUser, IconRobot } from '@tabler/icons-react';
+import { chatSectionStyles, slideIn } from './styles';
+import { Message } from '../../types/conversation';
 
 interface MessageBubbleProps {
-  item: EnhancedConversationItem;
+  item: Message;
 }
 
+const MotionBox = motion(Box as any);
+
+const bubbleVariants = {
+  initial: { 
+    opacity: 0, 
+    y: 20,
+    scale: 0.95
+  },
+  animate: { 
+    opacity: 1, 
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 400,
+      damping: 20
+    }
+  },
+  hover: {
+    scale: 1.01,
+    transition: {
+      duration: 0.2
+    }
+  }
+};
+
+const typingIndicator = {
+  animate: {
+    opacity: [0.4, 1, 0.4],
+    transition: {
+      duration: 1.5,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  }
+};
+
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ item }) => {
-  const isAssistant = item.role === 'assistant';
-
-  const getDisplayText = () => {
-    console.log('Getting display text for item:', {
-      id: item.id,
-      role: item.role,
-      content: item.content,
-      formatted: item.formatted,
-      status: item.status
-    });
-
-    // For user messages, show transcription or processing state
-    if (!isAssistant) {
-      if (item.formatted?.transcript) {
-        return item.formatted.transcript;
-      }
-      if (item.formatted?.text) {
-        return item.formatted.text;
-      }
-      if (Array.isArray(item.content)) {
-        const textContent = item.content.find((c: ContentItem) => c?.type === 'input_text');
-        if (textContent?.text) return textContent.text;
-      }
-      if (typeof item.content === 'string') {
-        return item.content;
-      }
-      return '(transcribing...)';
-    }
-
-    // For assistant messages, show text response or processing state
-    if (isAssistant) {
-      if (item.formatted?.transcript) {
-        return item.formatted.transcript;
-      }
-      if (item.formatted?.text) {
-        return item.formatted.text;
-      }
-      if (Array.isArray(item.content)) {
-        const textContent = item.content.find((c: ContentItem) => c?.type === 'text');
-        if (textContent?.text) return textContent.text;
-      }
-      if (typeof item.content === 'string') {
-        return item.content;
-      }
-      return '(generating response...)';
-    }
-
-    return '(processing message)';
-  };
+  const isAssistant = item.role === 'ai';
 
   const formatTimestamp = (timestamp: string | number) => {
     if (!timestamp) return '';
@@ -70,54 +61,96 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ item }) => {
     }
   };
 
-  const renderContent = () => {
-    const displayText = getDisplayText();
-    console.log('Rendering message:', {
-      id: item.id,
-      role: item.role,
-      content: item.content,
-      formatted: item.formatted,
-      status: item.status,
-      displayText
-    });
-
-    return (
-      <>
-        <Text size="sm" style={chatSectionStyles.messageText}>
-          {displayText}
-        </Text>
-        {item.formatted?.file?.url && (
-          <Box mt="xs">
-            <audio 
-              src={item.formatted.file.url} 
-              controls 
-              style={chatSectionStyles.messageAudio}
-            />
-          </Box>
-        )}
-        <Text size="xs" style={{ opacity: 0.5, marginTop: 4 }}>
-          {formatTimestamp(item.created_at)}
-        </Text>
-      </>
-    );
-  };
-
   const messageContainerStyle = {
     ...chatSectionStyles.messageContainer,
     alignSelf: isAssistant ? 'flex-start' : 'flex-end',
-  } as const;
+    justifyContent: isAssistant ? 'flex-start' : 'flex-end',
+    width: 'auto',
+  };
 
-  const messageBubbleStyle = {
+  const bubbleStyle = {
     ...chatSectionStyles.messageBubbleBase,
     ...(isAssistant ? chatSectionStyles.messageBubbleAssistant : chatSectionStyles.messageBubbleUser),
-    opacity: item.status === 'in_progress' ? 0.8 : 1,
-  } as const;
+    opacity: item.final === false ? 0.8 : 1,
+  };
 
   return (
-    <Box style={messageContainerStyle}>
-      <div style={messageBubbleStyle}>
-        {renderContent()}
-      </div>
-    </Box>
+    <MotionBox
+      style={messageContainerStyle}
+      variants={bubbleVariants}
+      initial="initial"
+      animate="animate"
+      whileHover="hover"
+    >
+      <Box style={{ 
+        display: 'flex', 
+        alignItems: 'flex-end', 
+        gap: '8px', 
+        flexDirection: isAssistant ? 'row' : 'row-reverse',
+        width: 'auto'
+      }}>
+        {isAssistant ? (
+          <Avatar 
+            color="blue" 
+            radius="xl"
+            size="sm"
+            style={{
+              marginRight: '8px',
+              background: 'linear-gradient(135deg, rgba(56, 127, 255, 0.2), rgba(37, 99, 235, 0.1))',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(8px)',
+            }}
+          >
+            <IconRobot size={14} />
+          </Avatar>
+        ) : (
+          <Avatar 
+            color="violet" 
+            radius="xl"
+            size="sm"
+            style={{
+              marginLeft: '8px',
+              background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(99, 37, 235, 0.1))',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(8px)',
+            }}
+          >
+            <IconUser size={14} />
+          </Avatar>
+        )}
+
+        <div style={bubbleStyle}>
+          {item.final === false ? (
+            <motion.div
+              variants={typingIndicator}
+              animate="animate"
+              style={chatSectionStyles.messageText}
+            >
+              <Group gap={4}>
+                <motion.span>•</motion.span>
+                <motion.span>•</motion.span>
+                <motion.span>•</motion.span>
+              </Group>
+            </motion.div>
+          ) : (
+            <Text style={chatSectionStyles.messageText}>
+              {item.text}
+            </Text>
+          )}
+          
+          <Text 
+            size="xs" 
+            style={{ 
+              opacity: 0.5, 
+              marginTop: 4,
+              fontSize: '0.7rem',
+              color: 'var(--mantine-color-gray-5)'
+            }}
+          >
+            {formatTimestamp(item.created_at)}
+          </Text>
+        </div>
+      </Box>
+    </MotionBox>
   );
 };

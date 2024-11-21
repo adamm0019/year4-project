@@ -1,249 +1,146 @@
 import { AppShell } from '@mantine/core';
-import { RealtimeClient } from '@openai/realtime-api-beta';
-import React, { useEffect, useRef, useState } from 'react';
-import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
+import React, { useRef, useState } from 'react';
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
-import { WavRenderer } from '../utils/wav_renderer';
 import { notifications } from '@mantine/notifications';
+import { useConversation, Role } from '@11labs/react';
 
 // Components
 import { ChatSection } from '../components/ChatSection/ChatSection.js';
 import { Header } from '../components/Header/Header.js';
 import { AuthOverlay } from '../components/AuthOverlay/AuthOverlay.js';
 
-// Config
-import { instructions } from '../utils/conversation_config';
+// Types
+import { Message } from '../types/conversation';
 
-const LOCAL_RELAY_SERVER_URL: string = import.meta.env.VITE_LOCAL_RELAY_SERVER_URL || '';
+const ELEVEN_LABS_SERVER_URL = import.meta.env.VITE_ELEVEN_LABS_SERVER_URL;
 
 export const Home: React.FC = () => {
-  // API Key handling
-  const apiKey = LOCAL_RELAY_SERVER_URL
-    ? ''
-    : localStorage.getItem('tmp::voice_api_key') ||
-      prompt('OpenAI API Key') ||
-      '';
-
-  if (apiKey !== '') {
-    localStorage.setItem('tmp::voice_api_key', apiKey);
-  }
-
   // State
-  const [wavRecorder, setWavRecorder] = useState<WavRecorder | null>(null);
-  const [wavStreamPlayer, setWavStreamPlayer] = useState<WavStreamPlayer | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const [items, setItems] = useState<Message[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<string>('alloy');
   const [isRecording, setIsRecording] = useState(false);
-  const [items, setItems] = useState<any[]>([]);
-  const [selectedLanguage, setSelectedLanguage] = useState('es');
 
   // Refs
-  const clientRef = useRef<RealtimeClient>(
-    new RealtimeClient(
-      LOCAL_RELAY_SERVER_URL
-        ? { url: LOCAL_RELAY_SERVER_URL }
-        : {
-            apiKey: apiKey,
-            dangerouslyAllowAPIKeyInBrowser: false,
-          }
-    )
-  );
   const clientCanvasRef = useRef<HTMLCanvasElement>(null);
   const serverCanvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrameRef = useRef<number>();
 
-  // Initialize audio components and request permissions
-  const initializeAudio = async () => {
+  // Initialize ElevenLabs conversation
+  const conversation = useConversation({
+    onConnect: () => {
+      console.log('Connected to ElevenLabs');
+    },
+    onDisconnect: () => {
+      console.log('Disconnected from ElevenLabs');
+      setItems([]);
+    },
+    onMessage: (props: { message: string; source: Role }) => {
+      const newMessage: Message = {
+        text: props.message,
+        role: props.source,
+        timestamp: Date.now(),
+        created_at: new Date().toISOString(),
+        final: true
+      };
+
+      setItems(prevItems => [...prevItems, newMessage]);
+    },
+    onError: (error) => {
+      console.error('Conversation error:', error);
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to communicate with AI. Please try again.',
+        color: 'red',
+      });
+    }
+  });
+
+  const getSignedUrl = async () => {
     try {
-      // Create new instances
-      const recorder = new WavRecorder({ sampleRate: 24000 });
-      const player = new WavStreamPlayer({ sampleRate: 24000 });
+      const response = await fetch(`${ELEVEN_LABS_SERVER_URL}/api/get-signed-url`);
+      if (!response.ok) {
+        throw new Error('Failed to get signed URL');
+      }
+      const data = await response.json();
+      return data.signedUrl;
+    } catch (error) {
+      console.error('Error getting signed URL:', error);
+      notifications.show({
+        title: 'Connection Error',
+        message: 'Failed to connect to ElevenLabs. Please try again.',
+        color: 'red',
+      });
+      return null;
+    }
+  };
 
-      // Request microphone permissions and initialize recorder
-      await recorder.requestPermission();
-      await recorder.begin();
-      await player.connect();
+  const startConversation = async () => {
+    try {
+      // Get microphone permission
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Get signed URL
+      const signedUrl = await getSignedUrl();
+      if (!signedUrl) return false;
 
-      setWavRecorder(recorder);
-      setWavStreamPlayer(player);
-
+      // Start session with signed URL
+      await conversation.startSession({
+        signedUrl,
+        origin: window.location.origin
+      });
+      
       return true;
     } catch (error) {
-      console.error('Audio initialization error:', error);
+      console.error('Failed to start conversation:', error);
       notifications.show({
-        title: 'Audio Error',
-        message: 'Failed to initialize audio. Please check your microphone permissions.',
+        title: 'Error',
+        message: 'Failed to start conversation. Please check your microphone permissions.',
         color: 'red',
       });
       return false;
     }
   };
 
-  const resetAPIKey = React.useCallback(() => {
-    const apiKey = prompt('OpenAI API Key');
-    if (apiKey !== null) {
-      localStorage.clear();
-      localStorage.setItem('tmp::voice_api_key', apiKey);
-      window.location.reload();
-    }
-  }, []);
-
   const handleStartRecording = async () => {
-    if (!isConnected) return;
-
-    try {
-      if (!wavRecorder || !wavStreamPlayer || !clientRef.current) {
-        const initialized = await initializeAudio();
-        if (!initialized) return;
-      }
-
-      // Start recording
-      if (wavRecorder) {
-        await wavRecorder.record((data: { mono: ArrayBuffer }) => {
-          if (clientRef.current.isConnected()) {
-            clientRef.current.appendInputAudio(new Int16Array(data.mono));
-          }
-        });
-        setIsRecording(true);
-      }
-    } catch (error) {
-      console.error('Recording error:', error);
-      notifications.show({
-        title: 'Recording Error',
-        message: 'Failed to start recording. Please try again.',
-        color: 'red',
-      });
+    if (!conversation.status) {
+      const started = await startConversation();
+      if (!started) return;
     }
+    setIsRecording(true);
   };
 
   const handleStopRecording = async () => {
-    if (!wavRecorder || !clientRef.current) return;
-
-    try {
-      if (wavRecorder.getStatus() === 'recording') {
-        await wavRecorder.pause();
-      }
-      setIsRecording(false);
-
-      if (clientRef.current.isConnected()) {
-        await clientRef.current.createResponse();
-      }
-    } catch (error) {
-      console.error('Stop recording error:', error);
-      notifications.show({
-        title: 'Recording Error',
-        message: 'Failed to stop recording. Please try again.',
-        color: 'red',
-      });
-    }
+    setIsRecording(false);
   };
 
-  const connect = async () => {
-    const client = clientRef.current;
-    if (!client) return;
-
-    try {
-      // Initialize audio first
-      const initialized = await initializeAudio();
-      if (!initialized) return;
-
-      // Connect to server
-      await client.connect();
-
-      // Initialize session
-      await client.updateSession({
-        instructions: instructions,
-        input_audio_transcription: { 
-          model: 'whisper-1',
-        },
-        voice: 'alloy',
-        temperature: 0.7,
-        model: 'gpt-4o-realtime-preview-2024-10-01',
-        turn_detection: null // Force manual mode
-      });
-
-      setIsConnected(true);
-      setItems(client.conversation.getItems());
-    } catch (error) {
-      console.error('Connection error:', error);
-      setIsConnected(false);
-      notifications.show({
-        title: 'Connection Error',
-        message: 'Failed to connect. Please try again.',
-        color: 'red',
-      });
+  const handleSendMessage = async (message: string) => {
+    if (!conversation.status) {
+      const started = await startConversation();
+      if (!started) return;
     }
-  };
 
-  const disconnect = async () => {
-    const client = clientRef.current;
-    if (!client) return;
-
-    try {
-      // Stop recording if active
-      if (isRecording && wavRecorder) {
-        await wavRecorder.pause();
-        setIsRecording(false);
-      }
-
-      // Clean up audio components
-      if (wavRecorder) {
-        await wavRecorder.end();
-        setWavRecorder(null);
-      }
-
-      if (wavStreamPlayer) {
-        await wavStreamPlayer.interrupt();
-        setWavStreamPlayer(null);
-      }
-
-      // Disconnect client
-      client.disconnect();
-      setIsConnected(false);
-      setItems([]);
-    } catch (error) {
-      console.error('Disconnect error:', error);
-      notifications.show({
-        title: 'Disconnect Error',
-        message: 'Failed to disconnect properly. Please refresh the page.',
-        color: 'red',
-      });
-    }
-  };
-
-  // Set up event handlers
-  useEffect(() => {
-    const client = clientRef.current;
-    if (!client) return;
-
-    const handleConversationUpdated = async ({ item, delta }: any) => {
-      if (wavStreamPlayer && delta?.audio) {
-        await wavStreamPlayer.add16BitPCM(delta.audio, item.id);
-      }
-
-      if (item.status === 'completed' && item.formatted.audio?.length) {
-        const wavFile = await WavRecorder.decode(
-          item.formatted.audio,
-          24000,
-          24000
-        );
-        item.formatted.file = wavFile;
-      }
-
-      setItems(client.conversation.getItems());
+    const newMessage: Message = {
+      text: message,
+      role: 'user',
+      timestamp: Date.now(),
+      created_at: new Date().toISOString(),
+      final: true
     };
 
-    client.on('conversation.updated', handleConversationUpdated);
-    client.on('error', (error: any) => console.error('Client error:', error));
+    setItems(prevItems => [...prevItems, newMessage]);
+  };
 
-    return () => {
-      client.off('conversation.updated', handleConversationUpdated);
-      client.reset();
-    };
-  }, [wavStreamPlayer]);
+  const handleDisconnect = async () => {
+    await conversation.endSession();
+    setItems([]);
+  };
 
-  // Canvas rendering effect
-  useEffect(() => {
-    if (!wavRecorder || !wavStreamPlayer) return;
+  const handleConnect = async () => {
+    await startConversation();
+  };
+
+  // Set up audio visualization
+  React.useEffect(() => {
+    if (!conversation.status) return;
 
     const render = () => {
       // Client canvas rendering
@@ -256,19 +153,16 @@ export const Home: React.FC = () => {
           canvas.height = 40;
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           
-          const result = wavRecorder.recording
-            ? wavRecorder.getFrequencies('voice')
-            : { values: new Float32Array([0]) };
-          
-          WavRenderer.drawBars(
-            canvas,
-            ctx,
-            result.values,
-            '#1976d2',
-            10,
-            0,
-            8
-          );
+          const frequencies = conversation.getInputByteFrequencyData();
+          if (frequencies) {
+            // Draw input frequencies
+            ctx.fillStyle = '#1976d2';
+            const barWidth = canvas.width / frequencies.length;
+            frequencies.forEach((value, i) => {
+              const height = (value / 255) * canvas.height;
+              ctx.fillRect(i * barWidth, canvas.height - height, barWidth - 1, height);
+            });
+          }
         }
       }
 
@@ -282,40 +176,24 @@ export const Home: React.FC = () => {
           canvas.height = 40;
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           
-          const result = wavStreamPlayer.analyser
-            ? wavStreamPlayer.getFrequencies('voice')
-            : { values: new Float32Array([0]) };
-          
-          WavRenderer.drawBars(
-            canvas,
-            ctx,
-            result.values,
-            '#2e7d32',
-            10,
-            0,
-            8
-          );
+          const frequencies = conversation.getOutputByteFrequencyData();
+          if (frequencies) {
+            // Draw output frequencies
+            ctx.fillStyle = '#2e7d32';
+            const barWidth = canvas.width / frequencies.length;
+            frequencies.forEach((value, i) => {
+              const height = (value / 255) * canvas.height;
+              ctx.fillRect(i * barWidth, canvas.height - height, barWidth - 1, height);
+            });
+          }
         }
       }
 
-      animationFrameRef.current = requestAnimationFrame(render);
+      requestAnimationFrame(render);
     };
 
     render();
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [wavRecorder, wavStreamPlayer]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      disconnect();
-    };
-  }, []);
+  }, [conversation.status]);
 
   return (
     <AppShell
@@ -330,22 +208,23 @@ export const Home: React.FC = () => {
       }}
     >
       <Header
-        selectedLanguage={selectedLanguage}
-        onLanguageChange={(value) => setSelectedLanguage(value || 'es')}
-        onResetAPIKey={resetAPIKey}
-        showSettings={!LOCAL_RELAY_SERVER_URL}
+        selectedVoice={selectedVoice}
+        onVoiceChange={(value) => setSelectedVoice(value || 'alloy')}
+        onResetAPIKey={() => {}} // Not needed for ElevenLabs
+        showSettings={false}
       />
 
       <AppShell.Main style={{ flex: 1, display: 'flex', flexDirection: 'column', height: 'calc(100vh - 60px)', width: '100%' }}>
         <SignedIn>
           <ChatSection
             items={items}
-            isConnected={isConnected}
+            isConnected={conversation.status === 'connected'}
             isRecording={isRecording}
             onStartRecording={handleStartRecording}
             onStopRecording={handleStopRecording}
-            onDisconnect={disconnect}
-            onConnect={connect}
+            onDisconnect={handleDisconnect}
+            onConnect={handleConnect}
+            onSendMessage={handleSendMessage}
             clientCanvasRef={clientCanvasRef}
             serverCanvasRef={serverCanvasRef}
           />

@@ -1,40 +1,18 @@
-import { ItemType, FormattedToolType } from '@openai/realtime-api-beta/dist/lib/client.js';
+import { Role } from '@11labs/react';
 
-export interface ContentItem {
-  type: string;
+export interface Message {
   text: string;
-}
-
-export interface FormattedItem {
-  text?: string;
-  transcript?: string;
-  audio?: Int16Array;
-  output?: string;
-  tool?: FormattedToolType;
-  file?: {
-    url: string;
-  };
-}
-
-// Base conversation item matching OpenAI's types
-export interface BaseConversationItem {
-  id: string;
-  object: string;
-  role: 'assistant' | 'user' | 'system';
-  type: 'message' | 'function_call' | 'function_call_output';
-  content?: Array<ContentItem> | string;
-  formatted: FormattedItem;
-  status?: 'completed' | 'in_progress' | 'failed';
-  response?: string;
-}
-
-// Enhanced version with our custom fields
-export interface EnhancedConversationItem extends BaseConversationItem {
-  created_at: string;
+  role: Role;
   timestamp: number;
+  created_at: string;
+  final?: boolean;
+  id?: string;
 }
 
-// Type guard to check if an item is an EnhancedConversationItem
-export function isEnhancedConversationItem(item: any): item is EnhancedConversationItem {
-  return item && typeof item.created_at === 'string' && typeof item.timestamp === 'number';
+export function isMessage(item: any): item is Message {
+  return item && 
+    typeof item.text === 'string' && 
+    typeof item.role === 'string' &&
+    typeof item.timestamp === 'number' &&
+    typeof item.created_at === 'string';
 }

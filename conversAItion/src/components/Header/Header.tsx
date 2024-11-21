@@ -1,14 +1,14 @@
 import React from 'react';
 import { Group, Text, Select, Badge, ActionIcon, Tooltip, Container, rem, useMantineColorScheme, Menu, Box } from '@mantine/core';
-import { 
-  IconVolume, 
-  IconBrain, 
-  IconSettings, 
+import {
+  IconVolume,
+  IconBrain,
+  IconSettings,
   IconHistory,
   IconVocabulary,
   IconChartBar,
   IconBook2,
-  IconLanguage,
+  IconMicrophone,
   IconSun,
   IconMoon,
   IconMenu2
@@ -21,23 +21,27 @@ import conversationLogoDark from '../../assets/conversationlogodarkmode.svg';
 import conversationLogoLight from '../../assets/conversationlogolightmode.svg';
 
 interface HeaderProps {
-  selectedLanguage: string;
-  onLanguageChange: (value: string | null) => void;
+  selectedVoice: string;
+  onVoiceChange: (value: string | null) => void;
   onResetAPIKey: () => void;
   showSettings: boolean;
 }
 
-const languages = [
-  { value: 'es', label: 'Spanish', flag: '🇪🇸' },
-  { value: 'fr', label: 'French', flag: '🇫🇷' },
-  { value: 'de', label: 'German', flag: '🇩🇪' },
-  { value: 'it', label: 'Italian', flag: '🇮🇹' },
-  { value: 'pt', label: 'Portuguese', flag: '🇵🇹' },
+const voices = [
+  { value: 'alloy', label: 'Alloy', description: 'Neutral and balanced' },
+  { value: 'echo', label: 'Echo', description: 'Warm and natural' },
+  { value: 'ash', label: 'Ash', description: 'British accent' },
+  { value: 'ballad', label: 'Ballad', description: 'Deep and authoritative' },
+  { value: 'verse', label: 'Verse', description: 'Energetic and friendly' },
+  { value: 'shimmer', label: 'Shimmer', description: 'Clear and expressive' },
+  { value: 'coral', label: 'Coral', description: 'Clear and expressive' },
+  { value: 'sage', label: 'Sage', description: 'Clear and expressive' },
+
 ];
 
 export const Header: React.FC<HeaderProps> = ({
-  selectedLanguage,
-  onLanguageChange,
+  selectedVoice,
+  onVoiceChange,
   onResetAPIKey,
   showSettings,
 }) => {
@@ -90,13 +94,6 @@ export const Header: React.FC<HeaderProps> = ({
 
         <Menu.Divider />
 
-        <Menu.Item
-          leftSection={colorScheme === 'dark' ? <IconSun size={14} /> : <IconMoon size={14} />}
-          onClick={toggleColorScheme}
-        >
-          {colorScheme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-        </Menu.Item>
-
         {showSettings && (
           <Menu.Item
             leftSection={<IconSettings size={14} />}
@@ -117,94 +114,75 @@ export const Header: React.FC<HeaderProps> = ({
             <Group style={headerStyles.languageGroup}>
               <Box hiddenFrom="sm">
                 <Link to="/">
-                  <img 
-                    src={colorScheme === 'dark' ? conversationLogoDark : conversationLogoLight} 
-                    alt="Conversation Logo" 
-                    style={{...headerStyles.logo, height: rem(120)}}
+                  <img
+                    src={colorScheme === 'dark' ? conversationLogoDark : conversationLogoLight}
+                    alt="Conversation Logo"
+                    style={{ ...headerStyles.logo, height: rem(120) }}
                   />
                 </Link>
               </Box>
               <Box visibleFrom="sm">
                 <Link to="/">
-                  <img 
-                    src={colorScheme === 'dark' ? conversationLogoDark : conversationLogoLight} 
-                    alt="Conversation Logo" 
+                  <img
+                    src={colorScheme === 'dark' ? conversationLogoDark : conversationLogoLight}
+                    alt="Conversation Logo"
                     style={headerStyles.logo}
                   />
                 </Link>
               </Box>
-              <Select
-                size="md"
-                w={{ base: 120, sm: 180 }}
-                value={selectedLanguage}
-                onChange={onLanguageChange}
-                leftSection={<IconLanguage size={16} />}
-                data={languages.map(lang => ({
-                  value: lang.value,
-                  label: `${lang.flag} ${lang.label}`
-                }))}
-                styles={{
-                  root: headerStyles.languageSelect,
-                  input: {
-                    backgroundColor: 'var(--mantine-color-dark-6)',
-                    borderColor: 'var(--mantine-color-dark-4)',
-                    height: '42px',
-                    fontSize: '1rem',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      borderColor: 'var(--mantine-color-blue-4)',
+              <Tooltip label="doesnt work yet lol">
+                <Select
+                  size="md"
+                  w={{ base: 200, sm: 280 }}
+                  value={selectedVoice}
+                  onChange={onVoiceChange}
+                  leftSection={<IconMicrophone size={16} />}
+                  placeholder="Choose AI voice"
+                  data={voices}
+                  styles={{
+                    root: headerStyles.languageSelect,
+                    input: {
+                      backgroundColor: 'var(--mantine-color-dark-6)',
+                      borderColor: 'var(--mantine-color-dark-4)',
+                      height: '42px',
+                      fontSize: '1rem',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        borderColor: 'var(--mantine-color-blue-4)',
+                      },
+                      '&:focus': {
+                        borderColor: 'var(--mantine-color-blue-5)',
+                        boxShadow: '0 0 0 2px rgba(51, 154, 240, 0.1)',
+                      },
                     },
-                    '&:focus': {
-                      borderColor: 'var(--mantine-color-blue-5)',
-                      boxShadow: '0 0 0 2px rgba(51, 154, 240, 0.1)',
+                    section: {
+                      color: 'var(--mantine-color-blue-4)',
                     },
-                  },
-                  section: {
-                    color: 'var(--mantine-color-blue-4)',
-                  },
-                  dropdown: {
-                    border: '1px solid var(--mantine-color-dark-4)',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
-                  },
-                  option: {
-                    transition: 'background-color 0.2s ease',
-                    '&[dataSelected]': {
-                      backgroundColor: 'var(--mantine-color-blue-7)',
+                    dropdown: {
+                      border: '1px solid var(--mantine-color-dark-4)',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
                     },
-                    '&[dataHovered]': {
-                      backgroundColor: 'var(--mantine-color-dark-5)',
+                    option: {
+                      transition: 'background-color 0.2s ease',
+                      '&[dataSelected]': {
+                        backgroundColor: 'var(--mantine-color-blue-7)',
+                      },
+                      '&[dataHovered]': {
+                        backgroundColor: 'var(--mantine-color-dark-5)',
+                      },
                     },
-                  },
-                }}
-              />
-              <Box visibleFrom="sm">
-                <Badge
-                  variant="dot" 
-                  color="blue" 
-                  size="lg"
-                  style={{
-                    ...headerStyles.proficiencyBadge,
-                    height: '42px',
-                    padding: '0 16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '0.95rem',
-                    textTransform: 'none',
-                    border: 'none',
                   }}
-                >
-                  Intermediate
-                </Badge>
-              </Box>
+                />
+              </Tooltip>
             </Group>
 
             <Group gap="sm">
               <Box visibleFrom="md">
                 <Group gap="sm">
                   <Tooltip label="Pronunciation Practice">
-                    <ActionIcon 
-                      variant="subtle" 
-                      color="blue" 
+                    <ActionIcon
+                      variant="subtle"
+                      color="blue"
                       size="lg"
                       style={headerStyles.actionButton}
                     >
@@ -213,9 +191,9 @@ export const Header: React.FC<HeaderProps> = ({
                   </Tooltip>
 
                   <Tooltip label="Vocabulary">
-                    <ActionIcon 
-                      variant="subtle" 
-                      color="blue" 
+                    <ActionIcon
+                      variant="subtle"
+                      color="blue"
                       size="lg"
                       style={headerStyles.actionButton}
                     >
@@ -224,9 +202,9 @@ export const Header: React.FC<HeaderProps> = ({
                   </Tooltip>
 
                   <Tooltip label="Grammar Lessons">
-                    <ActionIcon 
-                      variant="subtle" 
-                      color="blue" 
+                    <ActionIcon
+                      variant="subtle"
+                      color="blue"
                       size="lg"
                       style={headerStyles.actionButton}
                     >
@@ -236,9 +214,9 @@ export const Header: React.FC<HeaderProps> = ({
 
                   <Tooltip label="Progress Stats">
                     <Link to="/statistics">
-                      <ActionIcon 
-                        variant="subtle" 
-                        color="blue" 
+                      <ActionIcon
+                        variant="subtle"
+                        color="blue"
                         size="lg"
                         style={headerStyles.actionButton}
                       >
@@ -248,29 +226,13 @@ export const Header: React.FC<HeaderProps> = ({
                   </Tooltip>
 
                   <Tooltip label="Learning History">
-                    <ActionIcon 
-                      variant="subtle" 
-                      color="blue" 
-                      size="lg"
-                      style={headerStyles.actionButton}
-                    >
-                      <IconHistory style={{ width: rem(18), height: rem(18) }} stroke={1.5} />
-                    </ActionIcon>
-                  </Tooltip>
-
-                  <Tooltip label={colorScheme === 'dark' ? 'Light mode' : 'Dark mode'}>
                     <ActionIcon
                       variant="subtle"
                       color="blue"
                       size="lg"
-                      onClick={toggleColorScheme}
                       style={headerStyles.actionButton}
                     >
-                      {colorScheme === 'dark' ? (
-                        <IconSun style={{ width: rem(18), height: rem(18) }} stroke={1.5} />
-                      ) : (
-                        <IconMoon style={{ width: rem(18), height: rem(18) }} stroke={1.5} />
-                      )}
+                      <IconHistory style={{ width: rem(18), height: rem(18) }} stroke={1.5} />
                     </ActionIcon>
                   </Tooltip>
 
@@ -295,17 +257,17 @@ export const Header: React.FC<HeaderProps> = ({
               </Box>
 
               <SignedIn>
-                <UserButton 
+                <UserButton
                   afterSignOutUrl={window.location.origin}
                   appearance={{
                     elements: {
-                        avatarBox: {
-                          width: rem(32),
-                          height: rem(32),
-                        }
+                      avatarBox: {
+                        width: rem(32),
+                        height: rem(32),
                       }
-                    }}
-                  />
+                    }
+                  }}
+                />
               </SignedIn>
               <SignedOut>
                 <SignInButton mode="modal">

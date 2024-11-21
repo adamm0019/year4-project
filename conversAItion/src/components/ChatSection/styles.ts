@@ -7,6 +7,33 @@ export const pulseAnimation = keyframes`
   100% { transform: scale(1); }
 `;
 
+export const popAnimation = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+`;
+
+export const shimmer = keyframes`
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+`;
+
+export const gradientShift = keyframes`
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+`;
+
 export const slideIn = keyframes`
   from { 
     opacity: 0;
@@ -47,7 +74,7 @@ export const chatSectionStyles: StyleObject = {
     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     minWidth: '280px',
     maxWidth: '100%',
-    '@media (min-width: 768px)': {
+    '@media (minWidth: 768px)': {
       maxWidth: '85%',
     },
     wordWrap: 'break-word',
@@ -88,7 +115,7 @@ export const chatSectionStyles: StyleObject = {
     borderRadius: 'var(--mantine-radius-md)',
     width: '100%',
     minWidth: '280px',
-    '@media (min-width: 768px)': {
+    '@media (minWidth: 768px)': {
       minWidth: '300px',
     },
     height: '40px',
@@ -108,7 +135,7 @@ export const chatSectionStyles: StyleObject = {
     height: 'calc(100vh - 60px)',
     scrollBehavior: 'smooth',
     padding: '16px 8px',
-    '@media (min-width: 768px)': {
+    '@media (minWidth: 768px)': {
       padding: '32px 16px',
     },
   } as CSSProperties,
@@ -122,7 +149,7 @@ export const chatSectionStyles: StyleObject = {
     boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.1)',
     zIndex: 10,
     padding: '16px 8px',
-    '@media (min-width: 768px)': {
+    '@media (minWidth: 768px)': {
       padding: '24px 16px',
     },
   } as CSSProperties,
@@ -134,7 +161,7 @@ export const chatSectionStyles: StyleObject = {
     borderRadius: '12px',
     border: '1px solid rgba(86, 88, 105, 1)',
     padding: '8px',
-    '@media (min-width: 768px)': {
+    '@media (minWidth: 768px)': {
       padding: '8px 12px',
     },
     boxShadow: '0 0 15px rgba(0, 0, 0, 0.1)',
@@ -145,15 +172,37 @@ export const chatSectionStyles: StyleObject = {
     transition: 'opacity 0.3s ease',
     filter: 'drop-shadow(0 0 8px rgba(51, 154, 240, 0.2))',
     width: '80px',
-    '@media (min-width: 768px)': {
+    '@media (minWidth: 768px)': {
       width: '100px',
     },
     height: '40px',
   } as CSSProperties,
-  loader: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    opacity: 0.8,
+  headerContainer: {
+    background: 'rgba(26, 27, 30, 0.8)',
+    backdropFilter: 'blur(10px)',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+    position: 'sticky',
+    top: 0,
+    zIndex: 100,
+    transition: 'all 0.3s ease',
+  } as CSSProperties,
+  gradientText: {
+    background: 'linear-gradient(135deg, #4F46E5, #06B6D4)',
+    backgroundSize: '200% 200%',
+    animation: `${gradientShift} 5s ease infinite`,
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    fontWeight: 700,
+  } as CSSProperties,
+  interactiveElement: {
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    cursor: 'pointer',
+    '&:hover': {
+      transform: 'translateY(-1px)',
+      filter: 'brightness(1.1)',
+    },
+    '&:active': {
+      transform: 'translateY(1px)',
+    },
   } as CSSProperties,
 };
