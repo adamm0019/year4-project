@@ -1,3 +1,5 @@
+// using this file to store global theme properties defined in the mantine docs (https://mantine.dev/theming/theme-object/)
+
 import { createTheme, rem } from '@mantine/core';
 
 export const theme = createTheme({
@@ -65,7 +67,7 @@ export const theme = createTheme({
     },
   },
 
-  // Global theme properties
+  // global theme properties
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   fontSizes: {
     xs: rem(12),
