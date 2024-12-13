@@ -4,7 +4,7 @@ import { createStyles } from '@mantine/styles'
 import { IconPlayerStop, IconMicrophone, IconX } from '@tabler/icons-react';
 import { rem } from '@mantine/core';
 
-// Props interface
+// audiocontrols props
 interface AudioControlsProps {
   isConnected: boolean;
   canPushToTalk: boolean;
@@ -18,14 +18,10 @@ interface AudioControlsProps {
   serverCanvasRef: React.RefObject<HTMLCanvasElement>;
 }
 
-// Styles
+// these are the styles used by the audio controls component
 const useStyles = createStyles((theme: { colorScheme: string; colors: { dark: any[]; gray: any[]; }; spacing: { md: any; xs: any; }; }) => ({
   container: {
     borderTop: `1px solid ${theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[3]}`,
-  },
-  visualizer: {
-    height: '60px',
-    marginBottom: theme.spacing.md,
   },
   canvas: {
     width: '100%',
@@ -67,12 +63,7 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
 
   return (
     <Paper withBorder p="md" radius={0} className={classes.container}>
-      <Box className={classes.visualizer}>
-        <AudioVisualiser
-          clientCanvasRef={clientCanvasRef}
-          serverCanvasRef={serverCanvasRef}
-        />
-      </Box>
+
 
       <Group className={classes.controls}>
         <Switch
@@ -114,27 +105,5 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
         </Group>
       </Group>
     </Paper>
-  );
-};
-
-// Also add the AudioVisualiser interface
-interface AudioVisualiserProps {
-  clientCanvasRef: React.RefObject<HTMLCanvasElement>;
-  serverCanvasRef: React.RefObject<HTMLCanvasElement>;
-}
-
-const AudioVisualiser: React.FC<AudioVisualiserProps> = ({
-  clientCanvasRef,
-  serverCanvasRef,
-}) => {
-  return (
-    <>
-      <Box mb={4} h="45%">
-        <canvas ref={clientCanvasRef} style={{ width: '100%', height: '100%' }} />
-      </Box>
-      <Box h="45%">
-        <canvas ref={serverCanvasRef} style={{ width: '100%', height: '100%' }} />
-      </Box>
-    </>
   );
 };

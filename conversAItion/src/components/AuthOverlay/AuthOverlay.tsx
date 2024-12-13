@@ -8,8 +8,6 @@ It also contains styling using the old Mantine v3 createStyles API, found here: 
 
 import { Box, Paper, Text, Button, Stack } from '@mantine/core';
 import { createStyles } from '@mantine/styles'
-import darkModeLogo from '../../../src/assets/conversationlogodarkmode.svg';
-import lightModeLogo from '../../../src/assets/conversationlogolightmode.svg';
 import { SignInButton } from "@clerk/clerk-react";
 import { useMantineColorScheme } from '@mantine/core';
 
@@ -89,8 +87,6 @@ export const AuthOverlay = () => {
   return (
     <Box className={classes.overlay}>
       <img 
-        src={colorScheme === 'dark' ? darkModeLogo : lightModeLogo} 
-        alt="ConversAItion Logo" 
         className={classes.logo}
       />
       <Paper p="md" className={classes.card}>

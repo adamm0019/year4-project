@@ -3,10 +3,10 @@ import { theme } from './styles/theme';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import { Home } from './pages/Home';
-import { Statistics } from './pages/Statistics';
 import { Notifications } from '@mantine/notifications';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
+// main app component that sets everything up (https://mantine.dev/getting-started/)
 function App() {
   return (
     <BrowserRouter>
@@ -17,7 +17,6 @@ function App() {
         <Notifications position="top-right"/>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/statistics" element={<Statistics />} />
         </Routes>
       </MantineProvider>
     </BrowserRouter>

@@ -1,3 +1,5 @@
+// this file is used to store the types required for conversation items, such as text, role, timestamp and time a message was created etc.
+
 import { Role } from '@11labs/react';
 
 export interface Message {

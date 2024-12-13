@@ -11,6 +11,10 @@ interface MessageBubbleProps {
 
 const MotionBox = motion(Box as any);
 
+// handles the display of individual chat messages with animations and styling
+// im using framer-motion for smooth animations when messages appear and on hover
+
+// animation settings for the message bubble entrance and hover effects
 const bubbleVariants = {
   initial: { 
     opacity: 0, 
@@ -35,6 +39,7 @@ const bubbleVariants = {
   }
 };
 
+// animation for the typing indicator dots
 const typingIndicator = {
   animate: {
     opacity: [0.4, 1, 0.4],
@@ -46,20 +51,21 @@ const typingIndicator = {
   }
 };
 
+// formats the timestamp into a readable time string (https://stackoverflow.com/questions/40526102/how-do-you-format-a-date-time-in-typescript)
+const formatTimestamp = (timestamp: string | number) => {
+  if (!timestamp) return '';
+  try {
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    console.error('Error formatting timestamp:', e);
+    return '';
+  }
+};
+
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ item }) => {
   const isAssistant = item.role === 'ai';
-
-  const formatTimestamp = (timestamp: string | number) => {
-    if (!timestamp) return '';
-    try {
-      const date = new Date(timestamp);
-      if (isNaN(date.getTime())) return '';
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch (e) {
-      console.error('Error formatting timestamp:', e);
-      return '';
-    }
-  };
 
   const messageContainerStyle = {
     ...chatSectionStyles.messageContainer,
@@ -75,6 +81,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ item }) => {
   };
 
   return (
+    
     <MotionBox
       style={messageContainerStyle}
       variants={bubbleVariants}

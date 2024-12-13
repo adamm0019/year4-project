@@ -110,6 +110,24 @@ export const chatSectionStyles: StyleObject = {
     width: '100%',
     padding: 'var(--mantine-spacing-xs) 0',
   } as CSSProperties,
+  messageTimestamp: {
+    opacity: 0.5,
+    marginTop: 4,
+    fontSize: '0.7rem',
+    color: 'var(--mantine-color-gray-5)',
+  } as CSSProperties,
+  avatarBase: {
+    margin: '0 8px',
+    background: 'linear-gradient(135deg, rgba(56, 127, 255, 0.2), rgba(37, 99, 235, 0.1))',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(8px)',
+  } as CSSProperties,
+  avatarAssistant: {
+    background: 'linear-gradient(135deg, rgba(56, 127, 255, 0.2), rgba(37, 99, 235, 0.1))',
+  } as CSSProperties,
+  avatarUser: {
+    background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(99, 37, 235, 0.1))',
+  } as CSSProperties,
   messageAudio: {
     marginTop: 'var(--mantine-spacing-xs)',
     borderRadius: 'var(--mantine-radius-md)',
@@ -204,5 +222,11 @@ export const chatSectionStyles: StyleObject = {
     '&:active': {
       transform: 'translateY(1px)',
     },
+  } as CSSProperties,
+  messageWrapper: {
+    display: 'flex',
+    alignItems: 'flex-end',
+    gap: '8px',
+    width: 'auto',
   } as CSSProperties,
 };

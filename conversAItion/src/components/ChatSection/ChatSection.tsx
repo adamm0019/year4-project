@@ -4,8 +4,9 @@ import { chatSectionStyles, slideIn } from './styles';
 import { MessageBubble } from './MessageBubble';
 import { Message } from '../../types/conversation';
 import { useUser } from "@clerk/clerk-react";
-import { ModernInput } from '../ModernInput/ModernInput';
+import { ModernInput } from '../InputArea/InputArea';
 
+// props for the chat section component
 interface ChatSectionProps {
   items: Message[];
   isConnected: boolean;
@@ -39,14 +40,17 @@ export const ChatSection: React.FC<ChatSectionProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // auto scroll when new messages arrive
   useEffect(() => {
     scrollToBottom();
   }, [items]);
 
+  // setting mounted state on load
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
+  // connect before starting recording
   const handleRecordingStart = async () => {
     if (!isConnected) {
       await onConnect();
@@ -67,7 +71,7 @@ export const ChatSection: React.FC<ChatSectionProps> = ({
           <Center style={{ height: '100%', flexDirection: 'column', gap: '1rem', width: '100%', padding: '0 1rem' }}>
             <Text size="xl" fw={600} c="dimmed">Hi {user?.firstName}!</Text>
             <Text size="sm" c="dimmed" style={{ maxWidth: '600px', textAlign: 'center' }}>
-              Type a message or click the microphone button to start recording. I'll help you practice your conversation skills.
+              Type a message or click the microphone button to start recording.
             </Text>
           </Center>
         ) : (
@@ -93,32 +97,12 @@ export const ChatSection: React.FC<ChatSectionProps> = ({
         )}
       </Box>
 
-      {/* Input and Recording controls */}
+      {/* input and Recording controls */}
       <Box p="md" style={chatSectionStyles.recordingControls}>
         <Stack gap="md" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
           <Group justify="center" style={{ width: '100%' }}>
-            {/* Audio visualizers */}
-            <Box hiddenFrom="sm" style={{ width: '100%', marginBottom: '8px' }}>
-              <Group gap="md" justify="center">
-                <Box style={{ position: 'relative' }}>
-                  <canvas 
-                    ref={clientCanvasRef} 
-                    height={40} 
-                    width={80} 
-                    style={chatSectionStyles.canvas}
-                  />
-                </Box>
-                <Box style={{ position: 'relative' }}>
-                  <canvas 
-                    ref={serverCanvasRef} 
-                    height={40} 
-                    width={80} 
-                    style={chatSectionStyles.canvas}
-                  />
-                </Box>
-              </Group>
-            </Box>
 
+            {/* audio visualizer canvases (https://stackoverflow.com/questions/49061023/how-to-create-a-javascript-audio-visualizer) */}
             <Box visibleFrom="sm" style={{ position: 'absolute', top: '-50px', left: '50%', transform: 'translateX(-50%)' }}>
               <Group gap="xl">
                 <Box style={{ position: 'relative' }}>
@@ -140,7 +124,7 @@ export const ChatSection: React.FC<ChatSectionProps> = ({
               </Group>
             </Box>
 
-            {/* Modern Input */}
+            {/* text input for messages with recording button */}
             <Box style={{ width: '100%' }}>
               <ModernInput
                 isRecording={isRecording}

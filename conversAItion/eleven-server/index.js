@@ -1,3 +1,5 @@
+// some reference: https://stackoverflow.com/questions/78152117/nodejs-twilio-bi-directional-streaming-sending-an-elevenlabs-audio-stream-to-a used to create relay server and avoid CORS errors
+
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -9,12 +11,12 @@ const app = express();
 const port = process.env.PORT || 3001;
 const AGENT_ID = 'TaDOThYRtPGeAcPDnfys';
 
-// Configure CORS to allow requests from your Vercel domains
+// configuring cors
 const corsOptions = {
-  origin: '*', // Allow all origins
+  origin: '*', // just allowing all origins for testing, will change later
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: false // Set to true if your app needs to send cookies or Authorization headers
+  credentials: false
 };
 
 
@@ -24,6 +26,7 @@ app.use(express.json());
 app.get('/api/get-signed-url', async (req, res) => {
   try {
     const response = await fetch(
+      // from the eleven labs API docs, using this to get signed url with agent ID from API dashboard
       `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${AGENT_ID}`,
       {
         method: "GET",
@@ -35,7 +38,7 @@ app.get('/api/get-signed-url', async (req, res) => {
     );
 
     const responseText = await response.text();
-    console.log('Raw response:', responseText);
+    console.log('response:', responseText);
 
     if (!response.ok) {
       console.error('Eleven Labs API error:', {
@@ -50,8 +53,8 @@ app.get('/api/get-signed-url', async (req, res) => {
     try {
       body = JSON.parse(responseText);
     } catch (e) {
-      console.error('Failed to parse response as JSON:', e);
-      throw new Error('Invalid response format from Eleven Labs API');
+      console.error('failed to get response', e);
+      throw new Error('invalid response format from eleven labs');
     }
 
     console.log('Successfully got signed URL:', body);
@@ -66,6 +69,7 @@ app.get('/api/get-signed-url', async (req, res) => {
 app.options('*', cors(corsOptions));
 
 app.listen(port, () => {
+  // some logging for tesdting purposes
   console.log(`Eleven Labs server listening at http://localhost:${port}`);
   console.log('Using API key:', process.env.ELEVEN_LABS_API_KEY);
   console.log('Using agent ID:', AGENT_ID);

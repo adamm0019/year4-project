@@ -16,9 +16,7 @@ import {
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-react";
 import { Link } from 'react-router-dom';
 import { headerStyles } from './styles';
-import { SettingsModal } from '../SettingsModal/SettingsModal';
-import conversationLogoDark from '../../assets/conversationlogodarkmode.svg';
-import conversationLogoLight from '../../assets/conversationlogolightmode.svg';
+
 
 interface HeaderProps {
   selectedVoice: string;
@@ -79,7 +77,6 @@ export const Header: React.FC<HeaderProps> = ({
         </Menu.Item>
 
         <Menu.Divider />
-
         <Menu.Label>Progress</Menu.Label>
         <Menu.Item
           leftSection={<IconChartBar size={14} />}
@@ -115,8 +112,6 @@ export const Header: React.FC<HeaderProps> = ({
               <Box hiddenFrom="sm">
                 <Link to="/">
                   <img
-                    src={colorScheme === 'dark' ? conversationLogoDark : conversationLogoLight}
-                    alt="Conversation Logo"
                     style={{ ...headerStyles.logo, height: rem(120) }}
                   />
                 </Link>
@@ -124,13 +119,11 @@ export const Header: React.FC<HeaderProps> = ({
               <Box visibleFrom="sm">
                 <Link to="/">
                   <img
-                    src={colorScheme === 'dark' ? conversationLogoDark : conversationLogoLight}
-                    alt="Conversation Logo"
                     style={headerStyles.logo}
                   />
                 </Link>
               </Box>
-              <Tooltip label="doesnt work yet lol">
+              <Tooltip label="doesnt work yet">
                 <Select
                   size="md"
                   w={{ base: 200, sm: 280 }}
@@ -285,12 +278,6 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </Container>
       </div>
-
-      <SettingsModal
-        opened={settingsOpened}
-        onClose={() => setSettingsOpened(false)}
-        onResetAPIKey={onResetAPIKey}
-      />
     </>
   );
 };
