@@ -1,4 +1,4 @@
-# Language Learning Assistant 🎙️
+# Language Learning Assistant
 
 An interactive language learning application powered by OpenAI's real-time API, featuring voice-based conversations, realtime transcription, and adaptive learning.
 
