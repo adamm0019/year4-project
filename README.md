@@ -37,7 +37,7 @@ node index.js
 - **Styling**: Mantine Core + Tabler Icons
 
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 ```env
